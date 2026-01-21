@@ -158,12 +158,20 @@ CREATE POLICY "Anyone can view doctor profiles" ON public.doctors
 CREATE POLICY "Doctors can update their own profile" ON public.doctors
   FOR UPDATE USING (auth.uid() = user_id);
 
+CREATE POLICY "Doctors can create their own profile" ON public.doctors
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+
 -- Patients Policies
 CREATE POLICY "Patients can view their own data" ON public.patients
   FOR SELECT USING (auth.uid() = user_id);
 
 CREATE POLICY "Patients can update their own data" ON public.patients
   FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Patients can create their own profile" ON public.patients
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
 
 CREATE POLICY "Doctors can view their patients data" ON public.patients
   FOR SELECT USING (
