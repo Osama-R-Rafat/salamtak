@@ -6,6 +6,7 @@ import { Label } from "./ui/label";
 import { Checkbox } from "./ui/checkbox";
 import { ArrowRight, User, Mail, Lock, Phone, Calendar } from "lucide-react";
 import { useApp } from "../contexts/AppContext";
+import { toast } from "sonner";
 
 interface PatientLoginProps {
   onBack: () => void;
@@ -13,8 +14,16 @@ interface PatientLoginProps {
 }
 
 export function PatientLogin({ onBack, onLogin }: PatientLoginProps) {
-  const { t, dir, language } = useApp();
+  const { t, dir, language, signIn, signUp } = useApp();
   const [isRegistering, setIsRegistering] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  // Form states
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [birthDate, setBirthDate] = useState("");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 dark:from-gray-900 dark:to-emerald-950 flex items-center justify-center p-3 sm:p-4" dir={dir}>
@@ -39,7 +48,33 @@ export function PatientLogin({ onBack, onLogin }: PatientLoginProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="px-4 sm:px-6">
-          <form className="space-y-3 sm:space-y-4">
+          <form className="space-y-3 sm:space-y-4" onSubmit={async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            
+            try {
+              if (isRegistering) {
+                await signUp({
+                  email,
+                  password,
+                  phone,
+                  fullName,
+                  userType: 'patient',
+                  birthDate,
+                });
+                toast.success(language === 'ar' ? 'تم إنشاء الحساب بنجاح' : 'Account created successfully');
+                onLogin();
+              } else {
+                await signIn(email, password);
+                toast.success(language === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Signed in successfully');
+                onLogin();
+              }
+            } catch (error: any) {
+              toast.error(error.message || (language === 'ar' ? 'حدث خطأ، حاول مرة أخرى' : 'An error occurred'));
+            } finally {
+              setLoading(false);
+            }
+          }}>
             {isRegistering ? (
               <>
                 <div className="space-y-2">
@@ -50,6 +85,8 @@ export function PatientLogin({ onBack, onLogin }: PatientLoginProps) {
                     placeholder={t('register.name.placeholder')}
                     required
                     className="bg-white/50"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
                   />
                 </div>
                 
@@ -61,6 +98,8 @@ export function PatientLogin({ onBack, onLogin }: PatientLoginProps) {
                     placeholder="01234567890"
                     required
                     className="bg-white/50"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                   />
                 </div>
                 
@@ -72,6 +111,8 @@ export function PatientLogin({ onBack, onLogin }: PatientLoginProps) {
                     placeholder="example@email.com"
                     required
                     className="bg-white/50"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
                 
@@ -82,6 +123,8 @@ export function PatientLogin({ onBack, onLogin }: PatientLoginProps) {
                     type="date"
                     required
                     className="bg-white/50"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
                   />
                 </div>
                 
@@ -93,30 +136,23 @@ export function PatientLogin({ onBack, onLogin }: PatientLoginProps) {
                     placeholder="********"
                     required
                     className="bg-white/50"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="reg-confirm-password">{t('register.confirmPassword')}</Label>
-                  <Input
-                    id="reg-confirm-password"
-                    type="password"
-                    placeholder="********"
-                    required
-                    className="bg-white/50"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
               </>
             ) : (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">{t('login.phone')}</Label>
+                  <Label htmlFor="email">{t('login.email')}</Label>
                   <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="01234567890"
+                    id="email"
+                    type="email"
+                    placeholder="example@email.com"
                     required
                     className="bg-white/50"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
                 
@@ -128,17 +164,19 @@ export function PatientLogin({ onBack, onLogin }: PatientLoginProps) {
                     placeholder="********"
                     required
                     className="bg-white/50"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
               </>
             )}
 
             <Button 
-              type="button"
-              onClick={onLogin}
+              type="submit"
+              disabled={loading}
               className="w-full bg-green-600 hover:bg-green-700" 
             >
-              {isRegistering ? t('register.submit') : t('login.submit')}
+              {loading ? (language === 'ar' ? 'جاري التحميل...' : 'Loading...') : (isRegistering ? t('register.submit') : t('login.submit'))}
             </Button>
             
             <div className="text-center">

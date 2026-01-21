@@ -4,9 +4,9 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Textarea } from "./ui/textarea";
-import { ArrowRight, User, Mail, Lock, MapPin, Clock } from "lucide-react";
+import { ArrowRight, User, Mail, Lock } from "lucide-react";
 import { useApp } from "../contexts/AppContext";
+import { toast } from "sonner";
 
 interface DoctorLoginProps {
   onBack: () => void;
@@ -14,12 +14,50 @@ interface DoctorLoginProps {
 }
 
 export function DoctorLogin({ onBack, onLogin }: DoctorLoginProps) {
-  const { t, dir, language } = useApp();
+  const { t, dir, language, signIn, signUp } = useApp();
   const [isRegistering, setIsRegistering] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  // Form states
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [specialty, setSpecialty] = useState("");
+  const [licenseNumber, setLicenseNumber] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin();
+    setLoading(true);
+    
+    try {
+      if (isRegistering) {
+        if (!specialty) {
+          toast.error(language === 'ar' ? 'يرجى اختيار التخصص' : 'Please select a specialty');
+          setLoading(false);
+          return;
+        }
+        
+        await signUp({
+          email,
+          password,
+          phone: licenseNumber, // Using license number as unique identifier
+          fullName,
+          userType: 'doctor',
+          specialty,
+          licenseNumber,
+        });
+        toast.success(language === 'ar' ? 'تم إنشاء الحساب بنجاح' : 'Account created successfully');
+        onLogin();
+      } else {
+        await signIn(email, password);
+        toast.success(language === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Signed in successfully');
+        onLogin();
+      }
+    } catch (error: any) {
+      toast.error(error.message || (language === 'ar' ? 'حدث خطأ، حاول مرة أخرى' : 'An error occurred'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -53,7 +91,14 @@ export function DoctorLogin({ onBack, onLogin }: DoctorLoginProps) {
                   <Label htmlFor="doctor-name">{t('register.name')}</Label>
                   <div className="relative">
                     <User className={`absolute ${dir === 'rtl' ? 'right-3' : 'left-3'} top-3 h-4 w-4 text-muted-foreground`} />
-                    <Input id="doctor-name" placeholder={language === 'ar' ? '��. أحمد محمد' : 'Dr. Ahmed Mohamed'} className={dir === 'rtl' ? 'pr-10' : 'pl-10'} />
+                    <Input 
+                      id="doctor-name" 
+                      placeholder={language === 'ar' ? 'د. أحمد محمد' : 'Dr. Ahmed Mohamed'} 
+                      className={dir === 'rtl' ? 'pr-10' : 'pl-10'}
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
                 
@@ -61,13 +106,21 @@ export function DoctorLogin({ onBack, onLogin }: DoctorLoginProps) {
                   <Label htmlFor="doctor-email">{t('register.email')}</Label>
                   <div className="relative">
                     <Mail className={`absolute ${dir === 'rtl' ? 'right-3' : 'left-3'} top-3 h-4 w-4 text-muted-foreground`} />
-                    <Input id="doctor-email" type="email" placeholder="doctor@example.com" className={dir === 'rtl' ? 'pr-10' : 'pl-10'} />
+                    <Input 
+                      id="doctor-email" 
+                      type="email" 
+                      placeholder="doctor@example.com" 
+                      className={dir === 'rtl' ? 'pr-10' : 'pl-10'}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="specialty">{language === 'ar' ? 'التخصص' : 'Specialty'}</Label>
-                  <Select>
+                  <Select value={specialty} onValueChange={setSpecialty}>
                     <SelectTrigger>
                       <SelectValue placeholder={language === 'ar' ? 'اختر التخصص' : 'Select specialty'} />
                     </SelectTrigger>
@@ -83,31 +136,30 @@ export function DoctorLogin({ onBack, onLogin }: DoctorLoginProps) {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="experience">{language === 'ar' ? 'سنوات الخبرة' : 'Years of Experience'}</Label>
-                  <Input id="experience" type="number" placeholder="5" />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="clinic-address">{language === 'ar' ? 'عنوان العيادة' : 'Clinic Address'}</Label>
-                  <div className="relative">
-                    <MapPin className={`absolute ${dir === 'rtl' ? 'right-3' : 'left-3'} top-3 h-4 w-4 text-muted-foreground`} />
-                    <Textarea id="clinic-address" placeholder={language === 'ar' ? 'العنوان التفصيلي للعيادة' : 'Detailed clinic address'} className={dir === 'rtl' ? 'pr-10' : 'pl-10'} />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="work-hours">{language === 'ar' ? 'مواعيد العمل' : 'Working Hours'}</Label>
-                  <div className="relative">
-                    <Clock className={`absolute ${dir === 'rtl' ? 'right-3' : 'left-3'} top-3 h-4 w-4 text-muted-foreground`} />
-                    <Input id="work-hours" placeholder={language === 'ar' ? 'من 9 ص إلى 5 م' : 'From 9 AM to 5 PM'} className={dir === 'rtl' ? 'pr-10' : 'pl-10'} />
-                  </div>
+                  <Label htmlFor="license">{language === 'ar' ? 'رقم الترخيص الطبي' : 'Medical License Number'}</Label>
+                  <Input 
+                    id="license" 
+                    type="text" 
+                    placeholder={language === 'ar' ? 'رقم الترخيص' : 'License number'}
+                    value={licenseNumber}
+                    onChange={(e) => setLicenseNumber(e.target.value)}
+                    required
+                  />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="doctor-password">{t('register.password')}</Label>
                   <div className="relative">
                     <Lock className={`absolute ${dir === 'rtl' ? 'right-3' : 'left-3'} top-3 h-4 w-4 text-muted-foreground`} />
-                    <Input id="doctor-password" type="password" placeholder="********" className={dir === 'rtl' ? 'pr-10' : 'pl-10'} />
+                    <Input 
+                      id="doctor-password" 
+                      type="password" 
+                      placeholder="********" 
+                      className={dir === 'rtl' ? 'pr-10' : 'pl-10'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
               </>
@@ -117,7 +169,15 @@ export function DoctorLogin({ onBack, onLogin }: DoctorLoginProps) {
                   <Label htmlFor="email">{t('login.email')}</Label>
                   <div className="relative">
                     <Mail className={`absolute ${dir === 'rtl' ? 'right-3' : 'left-3'} top-3 h-4 w-4 text-muted-foreground`} />
-                    <Input id="email" type="email" placeholder="doctor@example.com" className={dir === 'rtl' ? 'pr-10' : 'pl-10'} />
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      placeholder="doctor@example.com" 
+                      className={dir === 'rtl' ? 'pr-10' : 'pl-10'}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
                 
@@ -125,14 +185,22 @@ export function DoctorLogin({ onBack, onLogin }: DoctorLoginProps) {
                   <Label htmlFor="password">{t('login.password')}</Label>
                   <div className="relative">
                     <Lock className={`absolute ${dir === 'rtl' ? 'right-3' : 'left-3'} top-3 h-4 w-4 text-muted-foreground`} />
-                    <Input id="password" type="password" placeholder="********" className={dir === 'rtl' ? 'pr-10' : 'pl-10'} />
+                    <Input 
+                      id="password" 
+                      type="password" 
+                      placeholder="********" 
+                      className={dir === 'rtl' ? 'pr-10' : 'pl-10'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
               </>
             )}
             
-            <Button className="w-full" type="submit">
-              {isRegistering ? (language === 'ar' ? 'إنشاء الحساب' : 'Create Account') : t('login.submit')}
+            <Button className="w-full" type="submit" disabled={loading}>
+              {loading ? (language === 'ar' ? 'جاري التحميل...' : 'Loading...') : (isRegistering ? (language === 'ar' ? 'إنشاء الحساب' : 'Create Account') : t('login.submit'))}
             </Button>
             
             <div className="text-center">

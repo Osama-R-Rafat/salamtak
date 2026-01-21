@@ -1,0 +1,21 @@
+# ⚠️ هذا ملف نموذجي - لا تستخدمه مباشرة!
+# 
+# الخطوات:
+# 1. أنشئ ملف جديد باسم .env (بدون أي امتداد)
+# 2. انسخ السطرين التاليين إلى ملف .env
+# 3. استبدل القيم بقيمك الحقيقية من Supabase
+# 4. احفظ الملف
+# 5. أعد تشغيل npm run dev
+
+# Project URL من Supabase (Settings → API → Project URL)
+VITE_SUPABASE_URL=https://xxxxxxxxxxxxx.supabase.co
+
+# Anon Key من Supabase (Settings → API → anon public)
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxxxxxxxx
+
+# ملاحظات مهمة:
+# - لا توجد مسافات حول علامة =
+# - لا توجد علامات تنصيص "" حول القيم
+# - يجب أن يكون الملف في جذر المشروع (بجانب package.json)
+# - يجب أن يبدأ كل متغير بـ VITE_
+# - بعد التعديل، أعد تشغيل npm run dev

@@ -1,0 +1,12 @@
+# قم بإنشاء ملف .env في جذر المشروع وانسخ المحتوى التالي:
+# Create a file named .env in the project root and copy the following:
+
+VITE_SUPABASE_URL=your_supabase_project_url_here
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+
+# مثال (Example):
+# VITE_SUPABASE_URL=https://xxxxxxxxxxxxx.supabase.co
+# VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxxxxxxxxxxx
+
+# ملاحظة: لا تشارك هذه المعلومات مع أحد
+# Note: Do not share these credentials with anyone

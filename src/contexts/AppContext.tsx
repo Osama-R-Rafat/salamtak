@@ -1,7 +1,19 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { authService } from '../services/auth.service';
+import { supabase } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 type Language = 'ar' | 'en';
 type Theme = 'light' | 'dark';
+
+interface UserProfile {
+  id: string;
+  email: string;
+  phone: string;
+  full_name: string;
+  user_type: 'doctor' | 'patient';
+  avatar_url?: string;
+}
 
 interface AppContextType {
   language: Language;
@@ -12,6 +24,13 @@ interface AppContextType {
   setTheme: (theme: Theme) => void;
   t: (key: string) => string;
   dir: 'rtl' | 'ltr';
+  // Auth related
+  user: User | null;
+  profile: UserProfile | null;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (data: any) => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -39,6 +58,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const saved = localStorage.getItem('app-theme');
     return (saved as Theme) || 'light';
   });
+
+  // Auth state
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Save to localStorage and apply theme class
   useEffect(() => {
@@ -85,6 +109,86 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const dir = language === 'ar' ? 'rtl' : 'ltr';
 
+  // Load user session on mount
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadSession() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (mounted) {
+          if (session?.user) {
+            setUser(session.user);
+            await loadUserProfile(session.user.id);
+          }
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error loading session:', error);
+        if (mounted) setLoading(false);
+      }
+    }
+
+    loadSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (mounted) {
+        setUser(session?.user || null);
+        if (session?.user) {
+          await loadUserProfile(session.user.id);
+        } else {
+          setProfile(null);
+        }
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Load user profile
+  const loadUserProfile = async (userId: string) => {
+    try {
+      const profileData = await authService.getUserProfile(userId);
+      setProfile(profileData);
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
+
+  // Sign in
+  const signIn = async (email: string, password: string) => {
+    try {
+      await authService.signIn({ email, password });
+    } catch (error: any) {
+      throw new Error(error.message || 'فشل تسجيل الدخول');
+    }
+  };
+
+  // Sign up
+  const signUp = async (data: any) => {
+    try {
+      await authService.signUp(data);
+    } catch (error: any) {
+      throw new Error(error.message || 'فشل إنشاء الحساب');
+    }
+  };
+
+  // Sign out
+  const signOut = async () => {
+    try {
+      await authService.signOut();
+      setUser(null);
+      setProfile(null);
+    } catch (error: any) {
+      throw new Error(error.message || 'فشل تسجيل الخروج');
+    }
+  };
+
   const value: AppContextType = {
     language,
     theme,
@@ -93,7 +197,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setLanguage,
     setTheme,
     t,
-    dir
+    dir,
+    user,
+    profile,
+    loading,
+    signIn,
+    signUp,
+    signOut,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
